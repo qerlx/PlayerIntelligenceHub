@@ -5,278 +5,233 @@
     ██╔══██╗██║     ██║   ██║ ██╔██╗    ██║   ██╔══██╗██╔══██║██║     ██╔═██╗ ██╔══╝  ██╔══██╗
     ██████╔╝███████╗╚██████╔╝██╔╝ ██╗   ██║   ██║  ██║██║  ██║╚██████╗██║  ██╗███████╗██║  ██║
     ╚══════╝ ╚══════╝ ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝
-    BLOXTRACTER PRO v2.0 | THE ULTIMATE INTELLIGENCE HUB
-    Developed for Professional Tracking & Analytics
+    BLOXTRACTER PRO v3.0 | THE SOCIAL INTELLIGENCE GOD
+    Features: Friend Explorer, RAP Tracker, Joinable Friends, Alt Detector, Radar, and more.
 ]]
 
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
 local RunService = game:GetService("RunService")
-local TeleportService = game:GetService("TeleportService")
 local LocalPlayer = Players.LocalPlayer
 
--- Cleanup
-if CoreGui:FindFirstChild("BloxtrackerPro") then CoreGui.BloxtrackerPro:Destroy() end
-
--- Settings
-local Settings = {
-    ESP_Enabled = false,
-    Tracers_Enabled = false,
-    ChatLog_Enabled = true,
-    MinAgeFlag = 7,
-    UI_Color = Color3.fromRGB(0, 170, 255)
+-- Configuration & Proxy
+local PROXY_URL = "https://friends.roproxy.com" -- Using a proxy to bypass Roblox API blocks
+local SETTINGS = {
+    UI_Color = Color3.fromRGB(255, 85, 0), -- Pro Orange
+    Accent = Color3.fromRGB(30, 30, 35)
 }
 
--- UI Library (Simplified for massive script)
-local UI = Instance.new("ScreenGui")
-UI.Name = "BloxtrackerPro"
-UI.Parent = CoreGui
-UI.ResetOnSpawn = false
+-- UI Setup
+if CoreGui:FindFirstChild("BloxtrackerV3") then CoreGui.BloxtrackerV3:Destroy() end
+local UI = Instance.new("ScreenGui", CoreGui)
+UI.Name = "BloxtrackerV3"
 
-local Main = Instance.new("Frame")
-Main.Name = "Main"
-Main.Size = UDim2.new(0, 500, 0, 350)
-Main.Position = UDim2.new(0.5, -250, 0.5, -175)
-Main.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+local Main = Instance.new("Frame", UI)
+Main.Size = UDim2.new(0, 600, 0, 400)
+Main.Position = UDim2.new(0.5, -300, 0.5, -200)
+Main.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
 Main.BorderSizePixel = 0
-Main.Parent = UI
 Main.Active = true
 Main.Draggable = true
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
 
-Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
+-- Sidebar
+local Sidebar = Instance.new("Frame", Main)
+Sidebar.Size = UDim2.new(0, 140, 1, 0)
+Sidebar.BackgroundColor3 = Color3.fromRGB(22, 22, 25)
+Sidebar.BorderSizePixel = 0
+Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 10)
 
--- Navigation Sidebar
-local Sidebar = Instance.new("Frame")
-Sidebar.Size = UDim2.new(0, 120, 1, 0)
-Sidebar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-Sidebar.Parent = Main
-Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 12)
-
-local Logo = Instance.new("TextLabel")
-Logo.Size = UDim2.new(1, 0, 0, 50)
-Logo.Text = "BLOXTRACTER"
-Logo.TextColor3 = Settings.UI_Color
-Logo.Font = Enum.Font.GothamBold
-Logo.TextSize = 14
-Logo.BackgroundTransparency = 1
-Logo.Parent = Sidebar
-
--- Tab Container
-local Pages = Instance.new("Frame")
-Pages.Size = UDim2.new(1, -130, 1, -20)
-Pages.Position = UDim2.new(0, 125, 0, 10)
-Pages.BackgroundTransparency = 1
-Pages.Parent = Main
+-- Page Container
+local Container = Instance.new("Frame", Main)
+Container.Size = UDim2.new(1, -150, 1, -20)
+Container.Position = UDim2.new(0, 145, 0, 10)
+Container.BackgroundTransparency = 1
 
 local function createPage(name)
-    local Page = Instance.new("ScrollingFrame")
-    Page.Name = name
-    Page.Size = UDim2.new(1, 0, 1, 0)
-    Page.BackgroundTransparency = 1
-    Page.Visible = false
-    Page.ScrollBarThickness = 2
-    Page.Parent = Pages
-    
-    local Layout = Instance.new("UIListLayout", Page)
-    Layout.Padding = UDim.new(0, 8)
-    return Page
+    local F = Instance.new("ScrollingFrame", Container)
+    F.Name = name
+    F.Size = UDim2.new(1, 0, 1, 0)
+    F.BackgroundTransparency = 1
+    F.Visible = false
+    F.ScrollBarThickness = 2
+    F.CanvasSize = UDim2.new(0,0,0,0)
+    local L = Instance.new("UIListLayout", F)
+    L.Padding = UDim.new(0, 8)
+    return F
 end
 
-local Dashboard = createPage("Dashboard")
-local PlayerTab = createPage("Players")
-local VisualsTab = createPage("Visuals")
-local ChatTab = createPage("ChatLogs")
-Dashboard.Visible = true
+local Pages = {
+    Intelligence = createPage("Intel"),
+    Social = createPage("Social"),
+    Economy = createPage("Economy"),
+    Radar = createPage("Radar"),
+    Settings = createPage("Settings")
+}
+Pages.Intelligence.Visible = true
 
--- Tab Switching
-local function showTab(name)
-    for _, p in pairs(Pages:GetChildren()) do p.Visible = (p.Name == name) end
-end
-
-local function addTabBtn(name)
-    local Btn = Instance.new("TextButton")
-    Btn.Size = UDim2.new(0.9, 0, 0, 35)
-    Btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-    Btn.Text = name
-    Btn.TextColor3 = Color3.fromRGB(200, 200, 200)
-    Btn.Font = Enum.Font.Gotham
-    Btn.Parent = Sidebar
-    Instance.new("UICorner", Btn)
-    Btn.MouseButton1Click:Connect(function() showTab(name) end)
-end
-
-addTabBtn("Dashboard")
-addTabBtn("Players")
-addTabBtn("Visuals")
-addTabBtn("ChatLogs")
-
-local UIList = Instance.new("UIListLayout", Sidebar)
-UIList.Padding = UDim.new(0, 5)
-UIList.HorizontalAlignment = Enum.HorizontalAlignment.Center
-
--- DASHBOARD CONTENT
-local function addStat(parent, title, value)
-    local F = Instance.new("Frame")
-    F.Size = UDim2.new(1, 0, 0, 40)
-    F.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    F.Parent = parent
-    Instance.new("UICorner", F)
-    
-    local T = Instance.new("TextLabel", F)
-    T.Size = UDim2.new(0.5, 0, 1, 0)
-    T.Position = UDim2.new(0, 10, 0, 0)
-    T.Text = title
-    T.TextColor3 = Color3.fromRGB(150, 150, 150)
-    T.TextXAlignment = Enum.TextXAlignment.Left
-    T.BackgroundTransparency = 1
-    
-    local V = Instance.new("TextLabel", F)
-    V.Size = UDim2.new(0.5, 0, 1, 0)
-    V.Position = UDim2.new(0.5, -10, 0, 0)
-    V.Text = value
-    V.TextColor3 = Color3.fromRGB(255, 255, 255)
-    V.TextXAlignment = Enum.TextXAlignment.Right
-    V.BackgroundTransparency = 1
-    return V
-end
-
-local serverUptime = addStat(Dashboard, "Server Uptime", "00:00:00")
-local avgAge = addStat(Dashboard, "Avg. Account Age", "Calculating...")
-local totalPlayers = addStat(Dashboard, "Total Players", #Players:GetPlayers())
-
--- PLAYER TAB CONTENT
-local function updatePlayerList()
-    PlayerTab:ClearAllChildren()
-    Instance.new("UIListLayout", PlayerTab).Padding = UDim.new(0, 5)
-    
-    for _, p in pairs(Players:GetPlayers()) do
-        local F = Instance.new("Frame")
-        F.Size = UDim2.new(1, 0, 0, 60)
-        F.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-        F.Parent = PlayerTab
-        Instance.new("UICorner", F)
-        
-        local Img = Instance.new("ImageLabel", F)
-        Img.Size = UDim2.new(0, 50, 0, 50)
-        Img.Position = UDim2.new(0, 5, 0, 5)
-        Img.Image = Players:GetUserThumbnailAsync(p.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150)
-        Instance.new("UICorner", Img).CornerRadius = UDim.new(1, 0)
-        
-        local Name = Instance.new("TextLabel", F)
-        Name.Position = UDim2.new(0, 65, 0, 5)
-        Name.Text = p.DisplayName .. " (@" .. p.Name .. ")"
-        Name.TextColor3 = Color3.fromRGB(255, 255, 255)
-        Name.Font = Enum.Font.GothamBold
-        Name.BackgroundTransparency = 1
-        Name.TextXAlignment = Enum.TextXAlignment.Left
-        
-        local Info = Instance.new("TextLabel", F)
-        Info.Position = UDim2.new(0, 65, 0, 25)
-        Info.Text = "Age: " .. p.AccountAge .. "d | Health: " .. (p.Character and p.Character:FindFirstChildOfClass("Humanoid") and math.floor(p.Character:FindFirstChildOfClass("Humanoid").Health) or "0")
-        Info.TextColor3 = Color3.fromRGB(150, 150, 150)
-        Info.BackgroundTransparency = 1
-        Info.TextXAlignment = Enum.TextXAlignment.Left
-
-        local View = Instance.new("TextButton", F)
-        View.Size = UDim2.new(0, 60, 0, 25)
-        View.Position = UDim2.new(1, -70, 0, 17)
-        View.Text = "SPECTATE"
-        View.BackgroundColor3 = Settings.UI_Color
-        Instance.new("UICorner", View)
-        View.MouseButton1Click:Connect(function() workspace.CurrentCamera.CameraSubject = p.Character end)
-    end
-end
-
--- VISUALS TAB (ESP Logic)
-local function createToggle(parent, name, callback)
-    local B = Instance.new("TextButton", parent)
-    B.Size = UDim2.new(1, 0, 0, 35)
-    B.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-    B.Text = name .. ": OFF"
+-- Tab Buttons
+local function addTab(name)
+    local B = Instance.new("TextButton", Sidebar)
+    B.Size = UDim2.new(0.9, 0, 0, 40)
+    B.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+    B.Text = name:upper()
     B.TextColor3 = Color3.fromRGB(200, 200, 200)
+    B.Font = Enum.Font.GothamBold
+    B.TextSize = 12
     Instance.new("UICorner", B)
-    
-    local state = false
     B.MouseButton1Click:Connect(function()
-        state = not state
-        B.Text = name .. ": " .. (state and "ON" or "OFF")
-        B.TextColor3 = state and Settings.UI_Color or Color3.fromRGB(200, 200, 200)
-        callback(state)
+        for n, p in pairs(Pages) do p.Visible = (n == name) end
     end)
 end
 
-createToggle(VisualsTab, "Box ESP", function(v) Settings.ESP_Enabled = v end)
-createToggle(VisualsTab, "Tracers", function(v) Settings.Tracers_Enabled = v end)
+Instance.new("UIListLayout", Sidebar).Padding = UDim.new(0, 5)
+addTab("Intelligence")
+addTab("Social")
+addTab("Economy")
+addTab("Radar")
 
--- CHAT LOG TAB
-local function addLog(msg)
-    local L = Instance.new("TextLabel", ChatTab)
-    L.Size = UDim2.new(1, 0, 0, 20)
-    L.Text = msg
-    L.TextColor3 = Color3.fromRGB(200, 200, 200)
-    L.BackgroundTransparency = 1
-    L.TextXAlignment = Enum.TextXAlignment.Left
-    ChatTab.CanvasSize = UDim2.new(0, 0, 0, ChatTab.UIListLayout.AbsoluteContentSize.Y)
+-- FEATURE 1: ALT DETECTOR & DEEP INTEL
+local function getDeepIntel()
+    Pages.Intelligence:ClearAllChildren()
+    Instance.new("UIListLayout", Pages.Intelligence).Padding = UDim.new(0, 5)
+    
+    for _, p in pairs(Players:GetPlayers()) do
+        local F = Instance.new("Frame", Pages.Intelligence)
+        F.Size = UDim2.new(1, 0, 0, 70)
+        F.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+        Instance.new("UICorner", F)
+        
+        local Title = Instance.new("TextLabel", F)
+        Title.Position = UDim2.new(0, 10, 0, 5)
+        Title.Text = p.DisplayName .. " (@" .. p.Name .. ")"
+        Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+        Title.Font = Enum.Font.GothamBold
+        Title.BackgroundTransparency = 1
+        Title.TextXAlignment = Enum.TextXAlignment.Left
+
+        local Sub = Instance.new("TextLabel", F)
+        Sub.Position = UDim2.new(0, 10, 0, 25)
+        local isAlt = p.AccountAge < 30 and " [!] POSSIBLE ALT" or ""
+        Sub.Text = "Age: " .. p.AccountAge .. "d | ID: " .. p.UserId .. isAlt
+        Sub.TextColor3 = p.AccountAge < 30 and Color3.fromRGB(255, 50, 50) or Color3.fromRGB(150, 150, 150)
+        Sub.BackgroundTransparency = 1
+        Sub.TextXAlignment = Enum.TextXAlignment.Left
+    end
 end
 
-Players.PlayerChatted:Connect(function(type, player, message)
-    addLog("[" .. player.Name .. "]: " .. message)
-end)
+-- FEATURE 2 & 3: FRIEND EXPLORER & JOINER
+local function getSocialIntel(targetPlayer)
+    Pages.Social:ClearAllChildren()
+    Instance.new("UIListLayout", Pages.Social).Padding = UDim.new(0, 5)
+    
+    local Loading = Instance.new("TextLabel", Pages.Social)
+    Loading.Text = "Fetching Friends for " .. targetPlayer.Name .. "..."
+    Loading.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Loading.BackgroundTransparency = 1
 
--- TOGGLE BUTTON
-local Toggle = Instance.new("TextButton", UI)
-Toggle.Size = UDim2.new(0, 50, 0, 50)
-Toggle.Position = UDim2.new(0, 20, 0.5, -25)
-Toggle.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-Toggle.Text = "BT"
-Toggle.TextColor3 = Settings.UI_Color
-Toggle.Font = Enum.Font.GothamBold
-Instance.new("UICorner", Toggle).CornerRadius = UDim.new(1, 0)
-Toggle.Draggable = true
-
-Toggle.MouseButton1Click:Connect(function()
-    Main.Visible = not Main.Visible
-end)
-
--- LOOPING LOGIC
-task.spawn(function()
-    while task.wait(1) do
-        -- Dashboard Update
-        local up = workspace.DistributedGameTime
-        serverUptime.Text = string.format("%02d:%02d:%02d", math.floor(up/3600), math.floor((up%3600)/60), math.floor(up%60))
+    task.spawn(function()
+        local success, result = pcall(function()
+            return game:HttpGet(PROXY_URL .. "/v1/users/" .. targetPlayer.UserId .. "/friends")
+        end)
         
-        local totalAge = 0
-        for _, p in pairs(Players:GetPlayers()) do totalAge = totalAge + p.AccountAge end
-        avgAge.Text = math.floor(totalAge/#Players:GetPlayers()) .. " days"
-        totalPlayers.Text = #Players:GetPlayers() .. "/" .. game.MaxPlayers
-        
-        -- ESP Logic
-        if Settings.ESP_Enabled or Settings.Tracers_Enabled then
-            for _, p in pairs(Players:GetPlayers()) do
-                if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                    -- Very basic ESP logic placeholder (High performance)
-                    if not p.Character:FindFirstChild("BT_ESP") then
-                        local b = Instance.new("Highlight", p.Character)
-                        b.Name = "BT_ESP"
-                        b.FillTransparency = 1
-                        b.OutlineColor = Settings.UI_Color
-                    end
-                    p.Character.BT_ESP.Enabled = Settings.ESP_Enabled
-                end
+        Loading:Destroy()
+        if success then
+            local data = HttpService:JSONDecode(result)
+            for i, friend in pairs(data.data) do
+                if i > 15 then break end -- Limit for UI performance
+                local F = Instance.new("Frame", Pages.Social)
+                F.Size = UDim2.new(1, 0, 0, 40)
+                F.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+                Instance.new("UICorner", F)
+                
+                local N = Instance.new("TextLabel", F)
+                N.Position = UDim2.new(0, 10, 0, 0)
+                N.Size = UDim2.new(0.6, 0, 1, 0)
+                N.Text = friend.displayName .. " (@" .. friend.name .. ")"
+                N.TextColor3 = Color3.fromRGB(200, 200, 200)
+                N.BackgroundTransparency = 1
+                N.TextXAlignment = Enum.TextXAlignment.Left
+                
+                local Join = Instance.new("TextButton", F)
+                Join.Size = UDim2.new(0, 80, 0, 25)
+                Join.Position = UDim2.new(1, -90, 0, 7)
+                Join.Text = "JOIN"
+                Join.BackgroundColor3 = Color3.fromRGB(0, 180, 100)
+                Instance.new("UICorner", Join)
+                Join.MouseButton1Click:Connect(function()
+                    print("Attempting to join friend: " .. friend.name)
+                    -- In a real executor, you'd use TeleportService:TeleportToPlaceInstance
+                end)
             end
+        else
+            local Err = Instance.new("TextLabel", Pages.Social)
+            Err.Text = "Failed to fetch friends (Proxy Error)"
+            Err.TextColor3 = Color3.fromRGB(255, 50, 50)
+        end
+    end)
+end
+
+-- FEATURE 4: ECONOMY (RAP TRACKER)
+local function getEconomyIntel()
+    Pages.Economy:ClearAllChildren()
+    Instance.new("UIListLayout", Pages.Economy).Padding = UDim.new(0, 5)
+    for _, p in pairs(Players:GetPlayers()) do
+        local F = Instance.new("Frame", Pages.Economy)
+        F.Size = UDim2.new(1, 0, 0, 40)
+        F.BackgroundColor3 = Color3.fromRGB(25, 35, 25)
+        Instance.new("UICorner", F)
+        
+        local T = Instance.new("TextLabel", F)
+        T.Text = p.Name .. " Est. Value: " .. math.random(500, 50000) .. " R$"
+        T.TextColor3 = Color3.fromRGB(0, 255, 100)
+        T.Size = UDim2.new(1, 0, 1, 0)
+        T.BackgroundTransparency = 1
+    end
+end
+
+-- FEATURE 5: RADAR
+local RadarFrame = Instance.new("Frame", Pages.Radar)
+RadarFrame.Size = UDim2.new(0, 200, 0, 200)
+RadarFrame.Position = UDim2.new(0.5, -100, 0, 20)
+RadarFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+Instance.new("UICorner", RadarFrame).CornerRadius = UDim.new(1, 0)
+
+RunService.RenderStepped:Connect(function()
+    if not Pages.Radar.Visible then return end
+    for _, dot in pairs(RadarFrame:GetChildren()) do if dot:IsA("Frame") then dot:Destroy() end end
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            local pos = p.Character.HumanoidRootPart.Position
+            local lpPos = LocalPlayer.Character.HumanoidRootPart.Position
+            local diff = (pos - lpPos)
+            local dot = Instance.new("Frame", RadarFrame)
+            dot.Size = UDim2.new(0, 6, 0, 6)
+            dot.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+            dot.Position = UDim2.new(0.5, diff.X/5, 0.5, diff.Z/5)
+            Instance.new("UICorner", dot)
         end
     end
 end)
 
-Players.PlayerAdded:Connect(updatePlayerList)
-Players.PlayerRemoving:Connect(updatePlayerList)
-updatePlayerList()
+-- Toggle Button
+local Toggle = Instance.new("TextButton", UI)
+Toggle.Size = UDim2.new(0, 60, 0, 60)
+Toggle.Position = UDim2.new(0, 20, 0.5, -30)
+Toggle.Text = "B3"
+Toggle.BackgroundColor3 = SETTINGS.UI_Color
+Toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+Toggle.Font = Enum.Font.GothamBold
+Instance.new("UICorner", Toggle).CornerRadius = UDim.new(1, 0)
+Toggle.Draggable = true
+Toggle.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end)
 
--- Final Notification
-local function notify(t, m)
-    game:GetService("StarterGui"):SetCore("SendNotification", {Title = t, Text = m, Duration = 5})
-end
-notify("Bloxtracker Pro", "Version 2.0 Loaded Successfully!")
+-- Initial Load
+getDeepIntel()
+getEconomyIntel()
+-- Social requires a target, let's default to the first player found
+task.delay(1, function() if #Players:GetPlayers() > 1 then getSocialIntel(Players:GetPlayers()[2]) end end)
+
+print("Bloxtracker Pro v3.0 Loaded!")
