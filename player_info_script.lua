@@ -1,71 +1,66 @@
 --[[
-    BLOXTRACTER NATIVE v7.0
-    ULTRA-SIMPLIFIED FOR MAXIMUM COMPATIBILITY
-    No complex UI, no proxies, no web calls.
+    BLOXTRACTER FORCE-RENDER v8.0
+    MANUAL POSITIONING - NO LAYOUTS - NO PROXIES
+    If this is empty, check F9 for errors.
 ]]
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
--- FORCE PARENT TO PLAYERGUI
+-- CLEANUP
+local old = LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("BloxtrackerForce")
+if old then old:Destroy() end
+
+-- UI SETUP
 local Screen = Instance.new("ScreenGui")
-Screen.Name = "BloxtrackerNative"
+Screen.Name = "BloxtrackerForce"
 Screen.Parent = LocalPlayer:WaitForChild("PlayerGui")
 Screen.ResetOnSpawn = false
 
--- THE "NO-FAIL" MAIN FRAME
 local Main = Instance.new("Frame", Screen)
-Main.Size = UDim2.new(0, 300, 0, 400)
-Main.Position = UDim2.new(0.5, -150, 0.5, -200)
-Main.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+Main.Size = UDim2.new(0, 250, 0, 300)
+Main.Position = UDim2.new(0.5, -125, 0.5, -150)
+Main.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 Main.BorderSizePixel = 2
 Main.Draggable = true
 Main.Active = true
 
 local Title = Instance.new("TextLabel", Main)
 Title.Size = UDim2.new(1, 0, 0, 30)
-Title.Text = "BLOXTRACTER NATIVE"
-Title.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Title.Text = "BLOXTRACTER v8.0"
+Title.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 
--- LIST CONTAINER (NO SCROLLING FRAME)
-local List = Instance.new("Frame", Main)
-List.Size = UDim2.new(1, -10, 1, -40)
-List.Position = UDim2.new(0, 5, 0, 35)
-List.BackgroundTransparency = 1
-
-local Layout = Instance.new("UIListLayout", List)
-Layout.Padding = UDim.new(0, 2)
-
--- SIMPLE PLAYER ADDER
-local function addPlayer(p)
-    local pFrame = Instance.new("TextLabel", List)
-    pFrame.Size = UDim2.new(1, 0, 0, 25)
-    pFrame.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-    pFrame.Text = p.Name .. " | Age: " .. p.AccountAge .. "d"
-    pFrame.TextColor3 = Color3.fromRGB(255, 255, 255)
-    pFrame.TextSize = 10
+-- MANUAL LISTING (NO LAYOUTS)
+local function renderList()
+    -- Clear old labels
+    for _, v in pairs(Main:GetChildren()) do
+        if v:IsA("TextLabel") and v.Name == "PlayerLabel" then v:Destroy() end
+    end
+    
+    local offset = 35
+    for i, p in pairs(Players:GetPlayers()) do
+        local L = Instance.new("TextLabel", Main)
+        L.Name = "PlayerLabel"
+        L.Size = UDim2.new(1, -10, 0, 20)
+        L.Position = UDim2.new(0, 5, 0, offset)
+        L.Text = i .. ". " .. p.Name .. " [" .. p.AccountAge .. "d]"
+        L.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        L.TextColor3 = Color3.fromRGB(255, 255, 255)
+        L.BorderSizePixel = 0
+        L.TextSize = 12
+        
+        offset = offset + 22
+        if offset > 280 then break end -- Limit to fit frame
+    end
 end
 
--- REFRESH LOGIC
-local function refresh()
-    for _, v in pairs(List:GetChildren()) do if v:IsA("TextLabel") then v:Destroy() end end
-    for _, p in pairs(Players:GetPlayers()) do addPlayer(p) end
-end
+-- INITIAL RENDER
+task.wait(1)
+renderList()
 
-Players.PlayerAdded:Connect(refresh)
-Players.PlayerRemoving:Connect(refresh)
-refresh()
+-- REFRESH ON JOIN/LEAVE
+Players.PlayerAdded:Connect(function() task.wait(1); renderList() end)
+Players.PlayerRemoving:Connect(function() task.wait(1); renderList() end)
 
--- TOGGLE BUTTON
-local T = Instance.new("TextButton", Screen)
-T.Size = UDim2.new(0, 40, 0, 40)
-T.Position = UDim2.new(0, 10, 0.5, -20)
-T.Text = "OPEN"
-T.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-T.TextColor3 = Color3.fromRGB(255, 255, 255)
-T.MouseButton1Click:Connect(function()
-    Main.Visible = not Main.Visible
-end)
-
-print("Bloxtracker Native Loaded.")
+print("Bloxtracker Force-Render Loaded.")
